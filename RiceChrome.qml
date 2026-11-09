@@ -9,6 +9,8 @@ Item {
   id: root
   objectName: "rice-bar-chrome"
   property var hostWindow: null
+  property var hostStrip: null
+  property var hostBackground: null
   property var facade: null
   property var service: null
   property var widgetGeometry: []
@@ -16,6 +18,7 @@ Item {
   readonly property var live: service ? service.live : RiceModel.snapshot({})
   readonly property string position: facade ? facade.position : "top"
   readonly property bool vertical: position === "left" || position === "right"
+  readonly property real thickness: hostStrip ? (vertical ? hostStrip.width : hostStrip.height) : (facade && facade.barSize ? facade.barSize : (vertical ? width : height))
   readonly property bool hidden: !facade || (facade.shell && facade.shell.bar && facade.shell.bar.barHidden === true) || !hostWindow || !hostWindow.visible
   readonly property bool stockTransparent: facade ? facade.transparent === true : false
   readonly property bool supported: facade && facade.shell && facade.shell.barConfig && (!facade.shell.barConfig.id || facade.shell.barConfig.id === "omarchy.bar")
@@ -40,8 +43,9 @@ Item {
   visible: supported && !hidden && !stockTransparent && live.preset!=="omarchy" && paintRects.length>0
 
   function sample() {
-    if(!hostWindow || !hostWindow.contentItem || !supported || hidden || stockTransparent || live.preset==="omarchy") return
-    var geometry=HostGeometry.snapshot(hostWindow.contentItem,vertical)
+    var container = hostStrip || (hostWindow ? hostWindow.contentItem : null)
+    if(!container || !supported || hidden || stockTransparent || live.preset==="omarchy") return
+    var geometry=HostGeometry.snapshot(container,vertical)
     var key=JSON.stringify(geometry)
     if(key!==geometrySignature){geometrySignature=key;widgetGeometry=geometry}
   }
@@ -57,6 +61,20 @@ Item {
       width:width,height:height,geometry:widgetGeometry,paintBounds:paintBounds()}
   }
   Binding {
+    target:root.hostBackground
+    property:"visible"
+    value:false
+    when:root.visible&&root.hostBackground!==null
+    restoreMode:Binding.RestoreBindingOrValue
+  }
+  Binding {
+    target:root.hostBackground
+    property:"color"
+    value:"transparent"
+    when:root.visible&&root.hostBackground!==null
+    restoreMode:Binding.RestoreBindingOrValue
+  }
+  Binding {
     target:root.hostWindow
     property:"color"
     value:"transparent"
@@ -69,8 +87,8 @@ Item {
   Rectangle {
     visible:root.live.preset==="rail"&&root.live.border
     color:root.themeBorderColor
-    x:root.vertical?(root.position==="left"?root.width-1:0):0
-    y:root.vertical?0:(root.position==="top"?root.height-1:0)
+    x:root.vertical?(root.position==="left"?root.thickness-1:0):0
+    y:root.vertical?0:(root.position==="top"?root.thickness-1:0)
     width:root.vertical?1:root.width;height:root.vertical?root.height:1
   }
   Repeater {
@@ -81,8 +99,8 @@ Item {
       required property int index
       x:root.vertical?2:Math.max(0,modelData.x)
       y:root.vertical?Math.max(0,modelData.y):2
-      width:root.vertical?Math.max(0,root.width-4):Math.max(0,Math.min(modelData.x+modelData.width,root.width)-x)
-      height:root.vertical?Math.max(0,Math.min(modelData.y+modelData.height,root.height)-y):Math.max(0,root.height-4)
+      width:root.vertical?Math.max(0,root.thickness-4):Math.max(0,Math.min(modelData.x+modelData.width,root.width)-x)
+      height:root.vertical?Math.max(0,Math.min(modelData.y+modelData.height,root.height)-y):Math.max(0,root.thickness-4)
       preset:root.live.preset;surfaceColor:root.surfaceColor;themeBorderColor:root.themeBorderColor
       accentColor:Color.accent;foregroundColor:root.nativeForeground;cornerRadius:root.live.radius
       borderEnabled:root.live.border;vertical:root.vertical;reducedMotion:root.service?root.service.reducedMotion:true

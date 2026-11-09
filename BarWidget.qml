@@ -25,6 +25,24 @@ BarWidget {
     panelItem.hostWidget=root;panelItem.service=root.service
     if(pendingOpen){pendingOpen=false;Qt.callLater(panelItem.open)}
   }
+  function findHostStrip(item, window) {
+    var content = window && window.contentItem ? window.contentItem : null
+    if (!content) return null
+    var cur = item ? item.parent : null
+    while (cur) {
+      if (cur.parent === content) return cur
+      cur = cur.parent
+    }
+    return content
+  }
+  function findHostBackground(strip) {
+    if (!strip || !strip.children) return null
+    for (var i = 0; i < strip.children.length; i++) {
+      var c = strip.children[i]
+      if (c && c.color !== undefined && c.sourceComponent === undefined) return c
+    }
+    return null
+  }
   function attach() {
     if(!bar || !bar.shell)return
     var next=bar.shell.serviceFor(moduleName)
@@ -35,9 +53,18 @@ BarWidget {
       injectPanel()
     }
     var window=root.QsWindow.window
-    if(window&&window.contentItem&&service&&!chrome)
-      chrome=chromeComponent.createObject(window.contentItem,{hostWindow:window,facade:bar,service:service})
-    if(chrome){chrome.facade=bar;chrome.service=service}
+    if(window&&window.contentItem&&service&&!chrome) {
+      var strip=findHostStrip(root,window)
+      var bg=findHostBackground(strip)
+      chrome=chromeComponent.createObject(strip,{hostWindow:window,hostStrip:strip,hostBackground:bg,facade:bar,service:service})
+    }
+    if(chrome){
+      chrome.facade=bar;chrome.service=service
+      if(!chrome.hostStrip||!chrome.hostBackground){
+        var s=findHostStrip(root,window)
+        chrome.hostStrip=s;chrome.hostBackground=findHostBackground(s)
+      }
+    }
   }
   function uiState(){return panelItem?panelItem.uiState():{opened:false}}
   function diagnostics(){return chrome?chrome.diagnostics():{screen:"",position:bar?bar.position:"",supported:false,hidden:false,stockTransparent:false,geometryCount:0,surfaceCount:0}}

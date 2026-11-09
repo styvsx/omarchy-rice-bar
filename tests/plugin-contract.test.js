@@ -15,6 +15,14 @@ test('background color override is scoped and restores the original binding',()=
  const s=source('RiceChrome.qml');assert.match(s,/target:root\.hostWindow/);assert.match(s,/when:root\.visible/);assert.match(s,/restoreMode:Binding\.RestoreBindingOrValue/);
  assert.match(s,/!stockTransparent/);assert.match(source('BarWidget.qml'),/if\(chrome\)chrome\.destroy\(\)/);
 });
+test('omarchy 4.5 full-window bar strip and background override compatibility',()=>{
+ const c=source('RiceChrome.qml'), b=source('BarWidget.qml');
+ assert.match(b,/findHostStrip/);assert.match(b,/findHostBackground/);
+ assert.match(c,/target:\s*root\.hostBackground/);
+ assert.match(c,/property:\s*"visible"/);
+ assert.match(c,/thickness:\s*hostStrip/);
+ assert.doesNotMatch(c,/height:\s*root\.vertical\s*\?[^:]+:\s*Math\.max\(0,\s*root\.height\s*-\s*4\)/);
+});
 test('one service owns settings and IPC, one lazy native panel per widget',()=>{
  assert.match(source('Service.qml'),/shell\.barConfig/);assert.match(source('Service.qml'),/shell\.updateEntryInline/);
  assert.match(source('BarWidget.qml'),/active:false;source:Qt\.resolvedUrl\("RicePanel.qml"\)/);
